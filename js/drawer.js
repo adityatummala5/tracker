@@ -52,9 +52,9 @@ function projectBody(p, s) {
       ${select('Stage', 'stage', p.stage, STAGES)}
       ${date('Target date', 'dueDate', p.dueDate)}
       ${text('Journal / venue', 'venue', p.venue, 'Current or target journal', 'wide')}
-      ${text('Waiting on', 'waitingOn', p.waitingOn, 'e.g. Steph to send transcripts', 'wide')}
+      ${text('Waiting on', 'waitingOn', p.waitingOn, 'e.g. PI to send feedback', 'wide')}
       ${text('Collaborators / PI', 'collaborators', p.collaborators, 'Who you work with', 'wide')}
-      ${text('Author list (for CV)', 'authors', p.authors, 'e.g. Tummala A, Smith J, …', 'wide')}
+      ${text('Author list (for CV)', 'authors', p.authors, 'e.g. Lee A, Smith J, …', 'wide')}
       ${tags('Tags', 'tags', p.tags)}
     </div>
     ${linksEditor(p.links)}
@@ -103,7 +103,7 @@ function presentationBody(p, s) {
         (t) => `<label class="toggle ${p.types?.includes(t.id) ? 'on' : ''}"><input type="checkbox" data-toggle="types" value="${t.id}" ${p.types?.includes(t.id) ? 'checked' : ''}>${t.label}</label>`
       ).join('')}</div></div>
       ${projectSelect('Related project', 'projectId', p.projectId, s)}
-      ${text('Author list (for CV)', 'authors', p.authors, 'e.g. Tummala A, Smith J', 'wide')}
+      ${text('Author list (for CV)', 'authors', p.authors, 'e.g. Lee A, Smith J', 'wide')}
     </div>
     ${linksEditor(p.links)}
     ${area('Notes', 'notes', p.notes, 'Feedback, attendance, awards…', 5)}`;
