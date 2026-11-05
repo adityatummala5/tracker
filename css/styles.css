@@ -219,28 +219,11 @@ button.chip:hover, a.chip:hover { border-color: var(--line-2); color: var(--text
 .week-time { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .week-time .big { font-size: 26px; font-weight: 750; }
 
-/* impact */
-.impact .card-head h2 .icon { color: var(--accent); }
-.imp-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
-.imp-col { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); }
-.imp-col.alt { background: var(--panel-2); }
-.imp-col p { margin: 0; }
-.imp-src { font-weight: 650; font-size: 13px; }
-.imp-nums { display: flex; gap: 22px; flex-wrap: wrap; }
-.imp-num { display: flex; flex-direction: column; }
-.imp-num b { font-size: 24px; font-weight: 750; letter-spacing: -.02em; line-height: 1.15; }
-.imp-num span { font-size: 12px; color: var(--muted); }
-.imp-top { margin-top: 10px; }
-.cite-n { min-width: 34px; text-align: center; font-weight: 700; font-size: 12.5px; padding: 1px 6px; border-radius: 6px; background: var(--accent-2); color: var(--accent); }
-.imp-note { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 10px 0 0; }
-.imp-note .icon { width: 13px; height: 13px; color: #d97706; }
-.imp-note .btn-link { font-size: 12px; font-weight: 500; }
 .meta.cites { color: var(--accent); }
 .fill-row { display: flex; align-items: center; gap: 8px; margin-top: -6px; flex-wrap: wrap; }
 .fill-row .muted { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; }
 .cite-line { display: inline-flex; align-items: center; gap: 4px; font-weight: 500; margin-left: 8px; }
 .cite-line .icon { width: 12px; height: 12px; }
-@media (max-width: 760px) { .imp-grid { grid-template-columns: minmax(0, 1fr); } }
 
 /* ---------- tasks ---------- */
 .quick { margin-bottom: 8px; }

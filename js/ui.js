@@ -96,23 +96,3 @@ export function choose({ title, body = '', buttons }) {
   });
 }
 
-// ---------- modal (small form) ----------
-export function promptForm({ title, body = '', fields, submit = 'Save' }) {
-  return new Promise((resolve) => {
-    const root = document.getElementById('modal');
-    root.innerHTML = `<div class="modal-backdrop" data-cancel></div>
-      <form class="modal" role="dialog" aria-modal="true" aria-label="${esc(title)}">
-        <h3>${esc(title)}</h3>${body ? `<div class="modal-body">${body}</div>` : ''}
-        <div class="grid2">${fields.map((f) => `<label class="field ${f.wide ? 'wide' : ''}"><span class="field-label">${esc(f.label)}</span>
-          <input name="${esc(f.name)}" type="${f.type || 'text'}" value="${esc(f.value ?? '')}" placeholder="${esc(f.placeholder || '')}" ${f.type === 'number' ? 'min="0" inputmode="numeric"' : ''}></label>`).join('')}</div>
-        <div class="modal-actions"><button type="button" class="btn" data-cancel>Cancel</button><button type="submit" class="btn primary">${esc(submit)}</button></div></form>`;
-    root.classList.add('open');
-    const form = root.querySelector('form');
-    const done = (v) => { root.classList.remove('open'); root.innerHTML = ''; document.removeEventListener('keydown', onKey, true); resolve(v); };
-    const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); done(null); } };
-    document.addEventListener('keydown', onKey, true);
-    root.onclick = (e) => { if (e.target.closest('[data-cancel]')) done(null); };
-    form.onsubmit = (e) => { e.preventDefault(); done(Object.fromEntries(new FormData(form).entries())); };
-    form.querySelector('input')?.focus();
-  });
-}

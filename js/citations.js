@@ -1,7 +1,6 @@
 // Citation counts from OpenAlex (free, no key, works from the browser), using the DOIs in your links.
-// Google Scholar has no API, so its numbers are entered by hand (state.scholar) and shown alongside.
 //
-// What counts as one "item" for the h-index (mirrors how Scholar groups things):
+// How DOIs are grouped into one "item" (mirrors how Scholar groups things):
 //   - a published project: every DOI on it (journal version + preprint) is merged into one item
 //   - an unpublished project with a preprint DOI (SSRN, TechRxiv, arXiv, medRxiv…): a preprint item
 //   - a presentation whose abstract has a DOI (e.g. JACC/Circulation supplements): an abstract item
@@ -34,7 +33,6 @@ const doisOf = (links = []) => [...new Set(links.map((l) => extractDoi(l.url)).f
 let cache = { works: {}, fetchedAt: null, error: '' };
 try { cache = { ...cache, ...JSON.parse(localStorage.getItem(KEY) || '{}') }; } catch {}
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(cache)); } catch {} };
-export const citeCache = () => cache;
 
 /** Every DOI anywhere in projects or presentations. */
 export function allDois(s) {
@@ -81,22 +79,6 @@ function countFor(item) {
     n += w.n;
   }
   return { cites: n, indexed };
-}
-
-export function metrics(s) {
-  const items = citableItems(s).map((it) => ({ ...it, ...countFor(it) })).sort((a, b) => b.cites - a.cites);
-  const counted = items.filter((i) => i.indexed);
-  const sorted = counted.map((i) => i.cites).sort((a, b) => b - a);
-  const h = sorted.filter((c, i) => c >= i + 1).length;
-  const kinds = { paper: 0, preprint: 0, abstract: 0 };
-  for (const i of counted) kinds[i.kind]++;
-  const noDoi = s.projects.filter((p) => p.stage === 'published' && !doisOf(p.links).length);
-  const missing = new Set(cache.missing || []);
-  const notIndexed = items.filter((i) => !i.indexed && i.dois.every((d) => missing.has(d)));
-  return {
-    items: counted, total: sorted.reduce((a, b) => a + b, 0), h, i10: sorted.filter((c) => c >= 10).length,
-    kinds, noDoi, notIndexed, fetchedAt: cache.fetchedAt, error: cache.error, loading: !!inflight,
-  };
 }
 
 /** Citations for a single project/presentation (for cards + drawer). */

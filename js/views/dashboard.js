@@ -1,9 +1,7 @@
 import { esc, fmtDate, relDays, greeting, fmtDuration, plural, timeAgo, todayISO } from '../util.js';
 import { STAGES, stats, attention, upcoming, openTasks, stage, projectTitle, minutesSince, weekStartISO, ACTIVE_STAGES, currentSubmission } from '../model.js';
 import { icon, badge, empty } from '../ui.js';
-import { safeUrl } from '../util.js';
 import { taskRow } from './tasks.js';
-import { metrics } from '../citations.js';
 
 const statCard = (n, label, href, tone) =>
   `<a class="stat tone-${tone}" href="${href}"><span class="stat-n">${n}</span><span class="stat-l">${esc(label)}</span></a>`;
@@ -29,37 +27,6 @@ function pipeline(s) {
     .join('')}</div><div class="pipe-legend">${counts
     .map((c) => `<span><i class="dot tone-${c.tone}"></i>${c.label} <b>${c.n}</b></span>`)
     .join('')}</div>`;
-}
-
-const KIND = { paper: 'paper', preprint: 'preprint', abstract: 'abstract' };
-function impact(s) {
-  const m = metrics(s);
-  const sc = s.scholar || null;
-  const parts = Object.entries(m.kinds).filter(([, n]) => n).map(([k, n]) => plural(n, KIND[k]));
-  const scUrl = sc?.url ? safeUrl(sc.url) : '';
-  const num = (n, l) => `<div class="imp-num"><b>${n ?? '–'}</b><span>${l}</span></div>`;
-  const status = m.loading ? 'Updating…' : m.error ? m.error : m.fetchedAt ? `Updated ${timeAgo(m.fetchedAt)}` : '';
-  return `<section class="card impact"><div class="card-head"><h2>${icon('quote')}Citations & impact</h2>
-      <button class="btn-link" data-act="refresh-cites" title="Refresh from OpenAlex">${icon('refresh')}${esc(status || 'Refresh')}</button></div>
-    <div class="imp-grid">
-      <div class="imp-col">
-        <div class="imp-src">OpenAlex <span class="muted small">· automatic, from your DOIs</span></div>
-        <div class="imp-nums">${num(m.total, 'citations')}${num(m.h, 'h-index')}${num(m.i10, 'i10-index')}</div>
-        <div class="muted small">${parts.length ? 'Counts ' + parts.join(', ') : 'No DOIs found yet'}</div>
-      </div>
-      <div class="imp-col alt">
-        <div class="imp-src">Google Scholar <span class="muted small">· ${sc?.updatedAt ? `you entered these ${timeAgo(sc.updatedAt)}` : 'entered by you'}</span></div>
-        ${sc && (sc.citations !== '' || sc.hIndex !== '')
-          ? `<div class="imp-nums">${num(sc.citations, 'citations')}${num(sc.hIndex, 'h-index')}${num(sc.i10, 'i10-index')}</div>`
-          : '<p class="muted small">Scholar has no API, so copy the numbers from your profile now and then.</p>'}
-        <div class="row-actions"><button class="btn sm" data-act="edit-scholar">${sc ? 'Update' : 'Add Scholar numbers'}</button>${scUrl ? `<a class="btn sm ghost" href="${esc(scUrl)}" target="_blank" rel="noopener">Open profile ${icon('arrow')}</a>` : ''}</div>
-      </div>
-    </div>
-    ${m.items.some((i) => i.cites) ? `<div class="mini-list imp-top">${m.items.filter((i) => i.cites).slice(0, 5)
-      .map((i) => `<button class="mini-row" data-act="open" data-ref="${i.ref.join(':')}"><span class="cite-n">${i.cites}</span><span class="grow clamp1">${esc(i.title)}</span><span class="muted small">${i.kind}</span></button>`).join('')}</div>` : ''}
-    ${m.noDoi.length ? `<p class="muted small imp-note">${icon('alert')}Not counted (no DOI link): ${m.noDoi.map((p) => `<button class="btn-link" data-act="open" data-ref="projects:${p.id}">${esc(p.title.length > 48 ? p.title.slice(0, 46) + '…' : p.title)}</button>`).join(', ')}</p>` : ''}
-    ${m.notIndexed.length ? `<p class="muted small imp-note">Not in OpenAlex yet: ${m.notIndexed.map((i) => esc(i.title.length > 48 ? i.title.slice(0, 46) + '…' : i.title)).join(', ')}</p>` : ''}
-  </section>`;
 }
 
 export function render(s) {
@@ -91,8 +58,6 @@ export function render(s) {
     ${statCard(st.posters, 'Posters', '#/presentations?type=poster', 'sky')}
     ${statCard(st.orals, 'Oral presentations', '#/presentations?type=oral', 'teal')}
   </section>
-
-  ${impact(s)}
 
   <section class="card"><div class="card-head"><h2>Pipeline</h2><a href="#/projects" class="btn-link">Open board ${icon('arrow')}</a></div>${pipeline(s)}</section>
 
