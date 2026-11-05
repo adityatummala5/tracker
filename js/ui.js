@@ -28,6 +28,8 @@ const P = {
   download: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
   upload: '<path d="M12 20V9M7 14l5-5 5 5M5 4h14"/>',
   rocket: '<path d="M5 15c-1.5 1.5-2 5-2 5s3.5-.5 5-2M9 11l4 4M14.5 4.5C17 3 21 3 21 3s0 4-1.5 6.5L13 16l-5-5z"/>',
+  quote: '<path d="M7 7h4v4c0 3-1.5 5-4 6M15 7h4v4c0 3-1.5 5-4 6"/>',
+  refresh: '<path d="M20 11a8 8 0 0 0-14.6-4.5L4 8M4 4v4h4M4 13a8 8 0 0 0 14.6 4.5L20 16M20 20v-4h-4"/>',
   calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
 };
 export const icon = (name, cls = '') =>
@@ -91,5 +93,26 @@ export function choose({ title, body = '', buttons }) {
     document.addEventListener('keydown', onKey, true);
     root.onclick = (e) => { const t = e.target.closest('[data-v]'); if (t) done(t.dataset.v); };
     root.querySelector('.btn.primary, .btn')?.focus();
+  });
+}
+
+// ---------- modal (small form) ----------
+export function promptForm({ title, body = '', fields, submit = 'Save' }) {
+  return new Promise((resolve) => {
+    const root = document.getElementById('modal');
+    root.innerHTML = `<div class="modal-backdrop" data-cancel></div>
+      <form class="modal" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+        <h3>${esc(title)}</h3>${body ? `<div class="modal-body">${body}</div>` : ''}
+        <div class="grid2">${fields.map((f) => `<label class="field ${f.wide ? 'wide' : ''}"><span class="field-label">${esc(f.label)}</span>
+          <input name="${esc(f.name)}" type="${f.type || 'text'}" value="${esc(f.value ?? '')}" placeholder="${esc(f.placeholder || '')}" ${f.type === 'number' ? 'min="0" inputmode="numeric"' : ''}></label>`).join('')}</div>
+        <div class="modal-actions"><button type="button" class="btn" data-cancel>Cancel</button><button type="submit" class="btn primary">${esc(submit)}</button></div></form>`;
+    root.classList.add('open');
+    const form = root.querySelector('form');
+    const done = (v) => { root.classList.remove('open'); root.innerHTML = ''; document.removeEventListener('keydown', onKey, true); resolve(v); };
+    const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); done(null); } };
+    document.addEventListener('keydown', onKey, true);
+    root.onclick = (e) => { if (e.target.closest('[data-cancel]')) done(null); };
+    form.onsubmit = (e) => { e.preventDefault(); done(Object.fromEntries(new FormData(form).entries())); };
+    form.querySelector('input')?.focus();
   });
 }

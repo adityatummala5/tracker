@@ -1,7 +1,8 @@
 import { store } from './store.js';
 import { esc, todayISO, nowHM, nowISO, fmtClock, timeAgo, localISO, minutesBetween } from './util.js';
 import { newProject, newPresentation, newIdea, newTask, newTime, projectTitle, openTasks, ACTIVE_STAGES } from './model.js';
-import { icon, renderInto, toast } from './ui.js';
+import { icon, renderInto, toast, promptForm } from './ui.js';
+import * as citations from './citations.js';
 import { initDrawer, openDrawer, closeDrawer, isOpen as drawerOpen, refreshIfOpen } from './drawer.js';
 import { initPalette, openPalette, paletteOpen } from './palette.js';
 import * as dashboard from './views/dashboard.js';
@@ -93,7 +94,7 @@ function renderMain() {
   document.title = `${NAV.find((n) => n[0] === r.name)?.[1] || 'Dashboard'} · Research Tracker`;
 }
 
-const renderAll = () => { renderSidebar(); renderMain(); };
+const renderAll = () => { renderSidebar(); renderMain(); citations.ensure(store.state); };
 
 // ---------- actions ----------
 function create(col, preset = {}) {
@@ -154,6 +155,24 @@ const ACTIONS = {
     }
     toast('Copied to clipboard');
   },
+  'refresh-cites': () => citations.refresh(store.state, { force: true }),
+  'edit-scholar': async () => {
+    const sc = store.state.scholar || {};
+    const v = await promptForm({
+      title: 'Google Scholar numbers',
+      body: '<p class="muted small">Copy these from the top-right of your Google Scholar profile ("All" column).</p>',
+      fields: [
+        { name: 'citations', label: 'Citations', type: 'number', value: sc.citations },
+        { name: 'hIndex', label: 'h-index', type: 'number', value: sc.hIndex },
+        { name: 'i10', label: 'i10-index', type: 'number', value: sc.i10 },
+        { name: 'url', label: 'Profile link (optional)', value: sc.url, placeholder: 'https://scholar.google.com/citations?user=…', wide: true },
+      ],
+    });
+    if (!v) return;
+    const n = (x) => (String(x).trim() === '' ? '' : Math.max(0, parseInt(x, 10) || 0));
+    store.update((s) => { s.scholar = { citations: n(v.citations), hIndex: n(v.hIndex), i10: n(v.i10), url: v.url.trim(), updatedAt: nowISO() }; });
+    toast('Scholar numbers saved');
+  },
   resolve: (el) => store.resolveConflict(el.dataset.v),
   retry: () => store.isGitHub && (store.meta.dirty ? store.push() : store.pull({ force: true })),
 };
@@ -205,6 +224,7 @@ main.addEventListener('submit', (e) => {
   if (f) { e.preventDefault(); settings.submitGitHub(f); }
 });
 
+window.addEventListener('rt:cites', () => { renderMain(); refreshIfOpen(); });
 window.addEventListener('rt:timer', (e) => startTimer(e.detail.projectId));
 window.addEventListener('hashchange', () => { if (drawerOpen()) closeDrawer(); renderAll(); });
 

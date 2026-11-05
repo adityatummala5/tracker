@@ -3,6 +3,9 @@ import { store } from './store.js';
 import { esc, nowISO, todayISO, splitTags, guessLinkLabel, fmtDate, fmtDuration, fmtRange, timeAgo, safeUrl } from './util.js';
 import { STAGES, OUTCOMES, PRES_TYPES, PRES_STATUS, COLLECTION_LABEL, byId, stage, presStatus, newProject, newTask, entryMinutes, openTasks } from './model.js';
 import { icon, badge, renderInto, toast } from './ui.js';
+import { citesFor } from './citations.js';
+import { bestDoi, fetchAuthors } from './authors.js';
+import { choose } from './ui.js';
 
 let current = null; // { col, id, isNew }
 const root = () => document.getElementById('drawer');
@@ -25,9 +28,10 @@ const projectSelect = (label, f, v, s) =>
 const titleBox = (f, v, ph) =>
   `<textarea id="${fid(f)}" class="title-input" data-f="${f}" rows="2" placeholder="${esc(ph)}">${esc(v)}</textarea>`;
 
-function linksEditor(links = []) {
-  return `<section class="d-section"><div class="d-section-head"><h4>Links</h4><button class="btn sm ghost" data-act="add-link">${icon('plus')}Add link</button></div>
-    ${links.length ? '' : '<p class="muted small">Drive folders, Google Docs, DOIs, Overleaf, email threads…</p>'}
+function linksEditor(links = [], cites = null) {
+  const c = cites ? `<span class="muted small cite-line">${icon('quote')}${cites.indexed ? `Cited by ${cites.cites} · OpenAlex` : 'Not in OpenAlex yet'}${cites.kind !== 'paper' ? ` · counted as ${cites.kind}` : ''}</span>` : '';
+  return `<section class="d-section"><div class="d-section-head"><h4>Links ${c}</h4><button class="btn sm ghost" data-act="add-link">${icon('plus')}Add link</button></div>
+    ${links.length ? '' : '<p class="muted small">Drive folders, Google Docs, DOIs, Overleaf, email threads… Add a DOI or preprint link to count citations.</p>'}
     <div class="rows">${links
       .map((l, i) => {
         const u = safeUrl(l.url);
@@ -39,6 +43,10 @@ function linksEditor(links = []) {
       })
       .join('')}</div></section>`;
 }
+
+const fillBtn = (p) => (bestDoi(p.links)
+  ? `<div class="wide fill-row"><button class="btn sm ghost" data-act="fill-authors">${icon('download')}Fill authors from DOI</button><span class="muted small">${esc(bestDoi(p.links))}</span></div>`
+  : '');
 
 // ---------- per-type bodies ----------
 function projectBody(p, s) {
@@ -55,9 +63,10 @@ function projectBody(p, s) {
       ${text('Waiting on', 'waitingOn', p.waitingOn, 'e.g. PI to send feedback', 'wide')}
       ${text('Collaborators / PI', 'collaborators', p.collaborators, 'Who you work with', 'wide')}
       ${text('Author list (for CV)', 'authors', p.authors, 'e.g. Lee A, Smith J, …', 'wide')}
+      ${fillBtn(p)}
       ${tags('Tags', 'tags', p.tags)}
     </div>
-    ${linksEditor(p.links)}
+    ${linksEditor(p.links, citesFor(s, 'projects', p.id))}
     <section class="d-section"><div class="d-section-head"><h4>Submission history</h4><button class="btn sm ghost" data-act="add-sub">${icon('plus')}Log submission</button></div>
       ${p.submissions?.length ? '' : '<p class="muted small">Track every journal you send this to and what happened.</p>'}
       <div class="rows">${(p.submissions || [])
@@ -104,8 +113,9 @@ function presentationBody(p, s) {
       ).join('')}</div></div>
       ${projectSelect('Related project', 'projectId', p.projectId, s)}
       ${text('Author list (for CV)', 'authors', p.authors, 'e.g. Lee A, Smith J', 'wide')}
+      ${fillBtn(p)}
     </div>
-    ${linksEditor(p.links)}
+    ${linksEditor(p.links, citesFor(s, 'presentations', p.id))}
     ${area('Notes', 'notes', p.notes, 'Feedback, attendance, awards…', 5)}`;
 }
 
@@ -288,6 +298,7 @@ async function onClick(e) {
     case 'open': { const [c, i] = b.dataset.ref.split(':'); return openDrawer(c, i); }
     case 'timer': return window.dispatchEvent(new CustomEvent('rt:timer', { detail: { projectId: id } }));
     case 'promote': return promote();
+    case 'fill-authors': return fillAuthors(b);
     case 'delete': return remove(col, id);
   }
 }
@@ -295,6 +306,27 @@ async function onClick(e) {
 function focusLast(prefix, k) {
   const els = root().querySelectorAll(`[id^="d-${prefix}-"][id$="-${k}"]`);
   els[els.length - 1]?.focus();
+}
+
+async function fillAuthors(btn) {
+  const { col, id } = current;
+  const item = byId(store.state[col], id);
+  const doi = bestDoi(item?.links);
+  if (!doi) return;
+  btn.disabled = true;
+  btn.lastChild.textContent = 'Looking up…';
+  try {
+    const authors = await fetchAuthors(doi);
+    if (item.authors?.trim() && item.authors.trim() !== authors) {
+      const ok = await choose({ title: 'Replace the author list?', body: `<p class="small"><b>Now:</b> ${esc(item.authors)}</p><p class="small"><b>From DOI:</b> ${esc(authors)}</p>`, buttons: [{ label: 'Keep mine', value: '' }, { label: 'Replace', value: 'y', primary: true }] });
+      if (!ok) return render();
+    }
+    if (current?.id === id) mutate((it) => { it.authors = authors; }, true);
+    toast('Author list filled in');
+  } catch (e) {
+    toast(e.message || "Couldn't look up authors.");
+    render();
+  }
 }
 
 function addLog() {

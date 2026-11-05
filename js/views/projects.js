@@ -2,6 +2,7 @@ import { esc, timeAgo, relDays, daysFromToday, nowISO, todayISO } from '../util.
 import { STAGES, stage, allTags, currentSubmission, byId, openTasks } from '../model.js';
 import { store } from '../store.js';
 import { icon, badge, tagChips, empty, toast } from '../ui.js';
+import { citesFor } from '../citations.js';
 
 function matches(p, q, tag) {
   if (tag && !(p.tags || []).includes(tag)) return false;
@@ -14,6 +15,7 @@ function card(p, s) {
   const sub = currentSubmission(p);
   const tasks = openTasks(s, p.id);
   const rejections = (p.submissions || []).filter((x) => x.outcome.includes('rejected')).length;
+  const cites = citesFor(s, 'projects', p.id);
   const due = p.dueDate && p.stage !== 'published' ? `<span class="due ${daysFromToday(p.dueDate) < 0 ? 'overdue' : ''}">${icon('calendar')}${relDays(p.dueDate)}</span>` : '';
   return `<article class="pcard" draggable="true" data-drag="${p.id}" data-act="open" data-ref="projects:${p.id}" tabindex="0">
     <div class="pcard-title">${esc(p.title || 'Untitled')}</div>
@@ -23,6 +25,7 @@ function card(p, s) {
       ${tagChips((p.tags || []).slice(0, 3))}
       <span class="spacer"></span>
       ${due}
+      ${cites?.cites ? `<span class="meta cites" title="${cites.cites} citations (OpenAlex)">${icon('quote')}${cites.cites}</span>` : ''}
       ${tasks.length ? `<span class="meta" title="Open tasks">${icon('checks')}${tasks.length}</span>` : ''}
       ${rejections ? `<span class="meta" title="Prior submissions">↺${rejections}</span>` : ''}
       ${(p.links || []).length ? `<span class="meta" title="Links">${icon('link')}${p.links.length}</span>` : ''}
