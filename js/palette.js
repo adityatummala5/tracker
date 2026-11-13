@@ -11,10 +11,12 @@ const COMMANDS = [
   { label: 'New task', icon: 'checks', run: (h) => h.create('tasks') },
   { label: 'New idea', icon: 'bulb', run: (h) => h.create('ideas') },
   { label: 'New presentation', icon: 'mic', run: (h) => h.create('presentations') },
+  { label: 'New activity', icon: 'award', run: (h) => h.create('activities') },
   { label: 'Start / stop timer', icon: 'clock', run: () => (location.hash = '#/time') },
   { label: 'Go to Dashboard', icon: 'home', run: () => (location.hash = '#/') },
   { label: 'Go to Projects', icon: 'projects', run: () => (location.hash = '#/projects') },
   { label: 'Go to Presentations', icon: 'mic', run: () => (location.hash = '#/presentations') },
+  { label: 'Go to Activities', icon: 'award', run: () => (location.hash = '#/activities') },
   { label: 'Go to Ideas', icon: 'bulb', run: () => (location.hash = '#/ideas') },
   { label: 'Go to Tasks', icon: 'checks', run: () => (location.hash = '#/tasks') },
   { label: 'Go to Time log', icon: 'clock', run: () => (location.hash = '#/time') },
@@ -30,6 +32,7 @@ function search(q) {
   if (!words.length) return COMMANDS.slice(0, 5).map((c) => ({ ...c, kind: 'Action' }));
   for (const p of s.projects) if (hit(p.title, p.venue, p.tags || [], p.collaborators, p.waitingOn, p.notes)) out.push({ kind: 'Project', label: p.title, sub: stage(p.stage).label, icon: 'projects', ref: ['projects', p.id] });
   for (const p of s.presentations) if (hit(p.title, p.conference, p.location, p.notes)) out.push({ kind: 'Presentation', label: p.title, sub: `${p.conference} · ${presStatus(p.status).label}`, icon: 'mic', ref: ['presentations', p.id] });
+  for (const a of s.activities || []) if (hit(a.title, a.organization, a.location, a.bullets || [], a.tags || [])) out.push({ kind: 'Activity', label: a.title || a.organization, sub: [a.organization, a.location].filter(Boolean).join(' · '), icon: 'award', ref: ['activities', a.id] });
   for (const i of s.ideas) if (hit(i.text, i.notes, i.tags || [])) out.push({ kind: 'Idea', label: i.text, icon: 'bulb', ref: ['ideas', i.id] });
   for (const t of s.tasks) if (hit(t.text)) out.push({ kind: 'Task', label: t.text, sub: (t.done ? 'Done · ' : '') + projectTitle(s, t.projectId), icon: 'checks', ref: ['tasks', t.id] });
   for (const c of COMMANDS) if (hit(c.label)) out.push({ ...c, kind: 'Action' });

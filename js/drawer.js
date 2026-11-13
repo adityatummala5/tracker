@@ -1,7 +1,7 @@
 // Side panel editor for every kind of item. Edits save as you type.
 import { store } from './store.js';
 import { esc, nowISO, todayISO, splitTags, guessLinkLabel, fmtDate, fmtDuration, fmtRange, timeAgo, safeUrl } from './util.js';
-import { STAGES, OUTCOMES, PRES_TYPES, PRES_STATUS, COLLECTION_LABEL, byId, stage, presStatus, newProject, newTask, entryMinutes, openTasks } from './model.js';
+import { STAGES, OUTCOMES, PRES_TYPES, PRES_STATUS, COLLECTION_LABEL, CATEGORIES, category, activityDates, byId, stage, presStatus, newProject, newTask, entryMinutes, openTasks } from './model.js';
 import { icon, badge, renderInto, toast } from './ui.js';
 import { citesFor } from './citations.js';
 import { bestDoi, fetchAuthors } from './authors.js';
@@ -150,8 +150,46 @@ function timeBody(e, s) {
     </div><p class="muted">${fmtDuration(entryMinutes(e))}</p>`;
 }
 
-const BODIES = { projects: projectBody, presentations: presentationBody, ideas: ideaBody, tasks: taskBody, timelog: timeBody };
-const TITLE_FIELD = { projects: 'title', presentations: 'title', ideas: 'text', tasks: 'text', timelog: null };
+function bulletsEditor(bullets, style) {
+  const label = style === 'skills' ? 'Items' : style === 'line' ? 'Details (optional)' : 'Bullet points';
+  const ph = style === 'skills' ? 'e.g. Python' : 'Start with a strong verb, e.g. Led a team of 40+ volunteers…';
+  return `<section class="d-section"><div class="d-section-head"><h4>${label}</h4><button class="btn sm ghost" data-act="add-bullet">${icon('plus')}Add ${style === 'skills' ? 'item' : 'bullet'}</button></div>
+    <div class="bullets">${bullets.map((b, i) => `<div class="bullet-row"><span class="bullet-dot">${style === 'skills' ? '·' : '•'}</span>
+      <textarea id="d-b-${i}" data-bullet="${i}" rows="1" placeholder="${esc(ph)}">${esc(b)}</textarea>
+      <span class="bullet-tools"><button class="icon-btn sm" data-act="mv-bullet" data-i="${i}" data-dir="-1" title="Move up" ${i ? '' : 'disabled'}>↑</button>
+      <button class="icon-btn sm" data-act="mv-bullet" data-i="${i}" data-dir="1" title="Move down" ${i < bullets.length - 1 ? '' : 'disabled'}>↓</button>
+      <button class="icon-btn sm" data-act="rm-bullet" data-i="${i}" title="Remove">${icon('x')}</button></span></div>`).join('')}</div>
+    ${bullets.length ? '<p class="muted small">Press Enter for a new bullet. Paste several lines to split them.</p>' : `<p class="muted small">No ${style === 'skills' ? 'items' : 'bullets'} yet.</p>`}</section>`;
+}
+
+function activityBody(a) {
+  const c = category(a.category);
+  const month = (label, f, v) => field(label, `<input type="month" id="${fid(f)}" data-f="${f}" value="${esc(v)}" placeholder="YYYY-MM">`);
+  const ph = c.style === 'skills' ? 'e.g. Skills, Languages, Interests' : c.style === 'line' ? 'Award or honor, e.g. Weissman International Fellow' : 'Your role, e.g. Co-Founder and Co-Director';
+  return `
+    ${titleBox('title', a.title, ph)}
+    <div class="grid2">
+      ${select('CV section', 'category', c.id, CATEGORIES)}
+      ${c.style === 'skills' ? '' : text(c.style === 'line' ? 'Awarded by (optional)' : 'Organization', 'organization', a.organization, c.style === 'line' ? 'e.g. National Science Foundation' : 'e.g. American Red Cross')}
+      ${c.style === 'skills' ? '' : text('Location', 'location', a.location, 'City, State / Country')}
+      ${c.style === 'skills' ? '' : `${month(c.style === 'line' ? 'Date' : 'Start', 'start', a.start)}
+      ${a.current ? '<div></div>' : month('End', 'end', a.end)}
+      <label class="field check-field"><input type="checkbox" id="d-current" data-f="current" data-kind="check" ${a.current ? 'checked' : ''}> I'm still doing this (shows “Present”)</label>
+      ${text('Custom date text (optional)', 'dateText', a.dateText, 'Overrides the dates, e.g. Class of 2030, Summers 2021–2023')}
+      ${c.style === 'entry' ? text('Hours (optional)', 'hours', a.hours, 'e.g. 120') : ''}`}
+    </div>
+    <p class="muted small preview-line">Shows on CV as: <b>${esc(activityDates(a) || 'no date')}</b></p>
+    ${bulletsEditor(a.bullets || [], c.style)}
+    <div class="grid2">
+      <label class="field check-field wide"><input type="checkbox" id="d-onCv" data-f="onCv" data-kind="check" ${a.onCv !== false ? 'checked' : ''}> Include on CV / copy exports</label>
+      ${tags('Tags (private)', 'tags', a.tags)}
+    </div>
+    ${linksEditor(a.links)}
+    ${area('Private notes', 'notes', a.notes, 'Contacts, outcomes, things to mention in interviews… (never exported)', 4)}`;
+}
+
+const BODIES = { projects: projectBody, presentations: presentationBody, ideas: ideaBody, tasks: taskBody, timelog: timeBody, activities: activityBody };
+const TITLE_FIELD = { projects: 'title', presentations: 'title', ideas: 'text', tasks: 'text', timelog: null, activities: 'title' };
 
 // ---------- open / render / close ----------
 export function openDrawer(col, id, { isNew = false } = {}) {
@@ -198,6 +236,8 @@ export function closeDrawer() {
   const { col, id } = current;
   const item = byId(store.state[col], id);
   const tf = TITLE_FIELD[col];
+  if (item && col === 'activities' && (item.bullets || []).some((x) => !x.trim()))
+    store.update((s) => { const it = byId(s.activities, id); it.bullets = it.bullets.filter((x) => x.trim()); });
   // Discard brand-new items that were never filled in.
   if (item && tf && !String(item[tf] || '').trim() && current.isNew) {
     store.update((s) => { s[col] = s[col].filter((x) => x.id !== id); });
@@ -231,8 +271,10 @@ function onInput(e) {
   if (!current) return;
   if (t.dataset.f) {
     const f = t.dataset.f;
-    const val = t.dataset.kind === 'tags' ? splitTags(t.value) : t.value;
-    const rerender = t.tagName === 'SELECT' || f === 'date';
+    const kind = t.dataset.kind;
+    const val = kind === 'tags' ? splitTags(t.value) : kind === 'check' ? t.checked : kind === 'lines' ? t.value.split('\n').map((x) => x.replace(/^\s*[•\-*]\s*/, '').trimEnd()).filter((x) => x.trim()) : t.value;
+    const rerender = t.tagName === 'SELECT' || f === 'date' || kind === 'check' || (current.col === 'activities' && ['start', 'end', 'dateText'].includes(f));
+    if (kind === 'check' && e.type === 'input') return;
     mutate((it) => {
       it[f] = val;
       if (f === 'date') it.monthOnly = false;
@@ -262,6 +304,20 @@ function onInput(e) {
         if (row && !row.label.trim()) row.label = guessLinkLabel(row.url);
       }, true);
     }
+    return;
+  }
+  if (t.dataset.bullet !== undefined) {
+    const i = +t.dataset.bullet;
+    const lines = t.value.split('\n').map((x) => x.replace(/^\s*[•\-*·]\s*/, ''));
+    if (lines.length > 1 && e.type === 'input') {
+      // pasted multiple lines (or pressed Enter): split into separate bullets
+      mutate((it) => { it.bullets.splice(i, 1, ...lines.map((x) => x.trim()).filter((x, k) => x || k === lines.length - 1)); }, true);
+      const next = document.getElementById(`d-b-${i + lines.length - 1}`) || document.getElementById(`d-b-${i}`);
+      next?.focus();
+      return;
+    }
+    mutate((it) => { it.bullets[i] = lines[0]; });
+    autosize();
     return;
   }
   if (t.dataset.toggle && e.type === 'change') {
@@ -299,6 +355,15 @@ async function onClick(e) {
     case 'timer': return window.dispatchEvent(new CustomEvent('rt:timer', { detail: { projectId: id } }));
     case 'promote': return promote();
     case 'fill-authors': return fillAuthors(b);
+    case 'add-bullet':
+      mutate((it) => (it.bullets ||= []).push(''), true);
+      return document.getElementById(`d-b-${byId(store.state[col], id).bullets.length - 1}`)?.focus();
+    case 'rm-bullet': return mutate((it) => it.bullets.splice(+b.dataset.i, 1), true);
+    case 'mv-bullet': {
+      const i = +b.dataset.i, j = i + +b.dataset.dir;
+      mutate((it) => { [it.bullets[i], it.bullets[j]] = [it.bullets[j], it.bullets[i]]; }, true);
+      return document.getElementById(`d-b-${j}`)?.focus();
+    }
     case 'delete': return remove(col, id);
   }
 }
@@ -374,6 +439,14 @@ export function initDrawer() {
   el.addEventListener('change', onInput);
   el.addEventListener('click', onClick);
   el.addEventListener('keydown', (e) => {
+    const t = e.target;
+    if (t.dataset?.bullet !== undefined && e.key === 'Backspace' && !t.value && current) {
+      e.preventDefault();
+      const i = +t.dataset.bullet;
+      mutate((it) => it.bullets.splice(i, 1), true);
+      document.getElementById(`d-b-${Math.max(0, i - 1)}`)?.focus();
+      return;
+    }
     if (e.key === 'Enter' && e.target.dataset.enter) {
       e.preventDefault();
       e.target.dataset.enter === 'add-log' ? addLog() : addTask();

@@ -326,6 +326,50 @@ button.chip:hover, a.chip:hover { border-color: var(--line-2); color: var(--text
 .cv ol { margin: 0; padding-left: 22px; }
 .cv li { margin-bottom: 8px; line-height: 1.5; overflow-wrap: anywhere; }
 
+/* ---------- activities (CV paper) ---------- */
+.cv-paper { background: #fff; color: #111; border: 1px solid var(--line); border-radius: 6px; box-shadow: var(--shadow); padding: 36px 44px; max-width: 900px;
+  font: 14.5px/1.42 "Times New Roman", Times, Georgia, serif; }
+.cv-paper ::selection { background: #c7d2fe; }
+.cv-sec { margin-bottom: 18px; }
+.cv-head { display: flex; align-items: center; justify-content: space-between; border-bottom: 1.5px solid #111; margin-bottom: 8px; padding-bottom: 2px; }
+.cv-head h2 { font: 700 14.5px/1.3 "Times New Roman", Times, serif; text-transform: uppercase; letter-spacing: .04em; color: #111; }
+.cv-tools { display: flex; gap: 2px; opacity: 0; transition: opacity .15s; }
+.cv-sec:hover .cv-tools, .cv-tools:focus-within { opacity: 1; }
+.cv-paper .icon-btn { color: #555; }
+.cv-paper .icon-btn:hover { background: #f1f2f5; color: #111; }
+.cv-entry, .cv-honor, .cv-skill { position: relative; border-radius: 4px; cursor: pointer; padding: 3px 6px; margin: 0 -6px 6px; }
+.cv-entry:hover, .cv-honor:hover, .cv-skill:hover { background: #f4f5ff; outline: 1px solid #dfe3ff; }
+.cv-entry:focus-visible, .cv-honor:focus-visible, .cv-skill:focus-visible { outline: 2px solid #4f46e5; }
+.cv-entry.off, .cv-honor.off, .cv-skill.off { opacity: .45; }
+.cv-row { display: flex; justify-content: space-between; gap: 16px; align-items: baseline; }
+.cv-honor { margin-bottom: 2px; }
+.cv-date { white-space: nowrap; flex: none; }
+.cv-role { font-style: italic; }
+.cv-sub { color: #444; font-style: normal; }
+.cv-entry ul { margin: 2px 0 0; padding-left: 22px; }
+.cv-entry li { margin: 1px 0; }
+.cv-flag { position: absolute; top: 4px; right: -4px; transform: translateX(100%); font: 11px system-ui, sans-serif; color: var(--muted); white-space: nowrap; }
+.cv-link { position: absolute; left: -26px; top: 4px; color: #4f46e5; opacity: 0; }
+.cv-entry:hover .cv-link { opacity: 1; }
+.cv-link .icon { width: 14px; height: 14px; }
+.add-sections { margin-top: 14px; align-items: center; }
+.field.check-field { flex-direction: row; align-items: center; gap: 8px; font-size: 13px; }
+.bullets { display: flex; flex-direction: column; gap: 6px; margin-bottom: 6px; }
+.bullet-row { display: grid; grid-template-columns: 14px 1fr auto; gap: 6px; align-items: start; }
+.bullet-dot { padding-top: 7px; color: var(--muted); text-align: center; }
+.bullet-row textarea { resize: none; overflow: hidden; min-height: 36px; }
+.bullet-tools { display: flex; gap: 0; opacity: .35; transition: opacity .15s; padding-top: 4px; }
+.bullet-row:hover .bullet-tools, .bullet-row:focus-within .bullet-tools { opacity: 1; }
+.bullet-tools .icon-btn:disabled { opacity: .3; cursor: default; }
+.preview-line { margin: -4px 0 0; }
+@media (max-width: 760px) {
+  .cv-paper { padding: 20px 16px; font-size: 13.5px; }
+  .cv-row { flex-direction: column; gap: 0; }
+  .cv-date { font-style: italic; color: #444; }
+  .cv-tools { opacity: 1; }
+  .cv-flag { position: static; transform: none; display: block; }
+}
+
 /* ---------- settings / forms ---------- */
 .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .field-label { font-size: 12px; font-weight: 600; color: var(--muted); }

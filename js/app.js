@@ -1,6 +1,6 @@
 import { store } from './store.js';
 import { esc, todayISO, nowHM, nowISO, fmtClock, timeAgo, localISO, minutesBetween } from './util.js';
-import { newProject, newPresentation, newIdea, newTask, newTime, projectTitle, openTasks, ACTIVE_STAGES } from './model.js';
+import { newProject, newPresentation, newIdea, newTask, newTime, newActivity, projectTitle, openTasks, ACTIVE_STAGES } from './model.js';
 import { icon, renderInto, toast } from './ui.js';
 import * as citations from './citations.js';
 import { initDrawer, openDrawer, closeDrawer, isOpen as drawerOpen, refreshIfOpen } from './drawer.js';
@@ -12,14 +12,16 @@ import * as ideas from './views/ideas.js';
 import * as tasks from './views/tasks.js';
 import * as time from './views/time.js';
 import * as cv from './views/cv.js';
+import * as activities from './views/activities.js';
 import * as settings from './views/settings.js';
 
-const VIEWS = { '': dashboard, projects, presentations, ideas, tasks, time, cv, settings };
+const VIEWS = { '': dashboard, projects, presentations, activities, ideas, tasks, time, cv, settings };
 const NAV = [
   ['', 'Dashboard', 'home'], ['projects', 'Projects', 'projects'], ['presentations', 'Presentations', 'mic'],
+  ['activities', 'Activities', 'award'],
   ['ideas', 'Ideas', 'bulb'], ['tasks', 'Tasks', 'checks'], ['time', 'Time log', 'clock'], ['cv', 'CV export', 'cv'], ['settings', 'Settings', 'gear'],
 ];
-const FACTORY = { projects: newProject, presentations: newPresentation, ideas: newIdea, tasks: newTask, timelog: newTime };
+const FACTORY = { projects: newProject, presentations: newPresentation, ideas: newIdea, tasks: newTask, timelog: newTime, activities: newActivity };
 
 const main = document.getElementById('main');
 const sidebar = document.getElementById('sidebar');
@@ -131,6 +133,7 @@ const ACTIONS = {
   ...presentations.actions,
   ...tasks.actions,
   ...settings.actions,
+  ...activities.actions,
   palette: () => openPalette(),
   open: (el) => { const [c, id] = el.dataset.ref.split(':'); openDrawer(c, id); },
   new: (el) => create(el.dataset.col, el.dataset.preset ? JSON.parse(el.dataset.preset) : {}),
@@ -199,6 +202,7 @@ main.addEventListener('change', (e) => {
   const t = e.target;
   if (t.dataset.ui && t.tagName === 'SELECT') return setUI({ [t.dataset.ui]: t.value });
   if (t.dataset.actChange === 'cv-review') return setUI({ cvReview: t.checked });
+  if (t.dataset.actChange === 'act-hidden') return setUI({ actShowHidden: t.checked });
   if (t.matches('[data-import]') && t.files[0]) return settings.importFile(t.files[0], { welcome: !store.state });
 });
 main.addEventListener('submit', (e) => {

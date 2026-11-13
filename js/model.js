@@ -40,7 +40,24 @@ export const PRES_STATUS = [
 ];
 export const presStatus = (id) => PRES_STATUS.find((s) => s.id === id) || PRES_STATUS[0];
 
-export const COLLECTION_LABEL = { projects: 'Project', presentations: 'Presentation', ideas: 'Idea', tasks: 'Task', timelog: 'Time entry' };
+export const COLLECTION_LABEL = { projects: 'Project', presentations: 'Presentation', ideas: 'Idea', tasks: 'Task', timelog: 'Time entry', activities: 'Activity' };
+
+// CV sections for the Activities page, in the order they appear on a CV.
+// style: 'entry' = Organization | Location / dates / role / bullets; 'line' = one line each (honors); 'skills' = "Label: text".
+export const CATEGORIES = [
+  { id: 'education', label: 'Education', style: 'entry' },
+  { id: 'research', label: 'Research Experience', style: 'entry' },
+  { id: 'clinical', label: 'Clinical Experience', style: 'entry' },
+  { id: 'work', label: 'Work & Teaching Experience', style: 'entry' },
+  { id: 'leadership', label: 'Leadership', style: 'entry' },
+  { id: 'innovation', label: 'Entrepreneurship & Competitions', style: 'entry' },
+  { id: 'service', label: 'Community Service & Global Health', style: 'entry' },
+  { id: 'extracurricular', label: 'Extracurriculars & Athletics', style: 'entry' },
+  { id: 'events', label: 'Events & Conferences Attended', style: 'entry' },
+  { id: 'honors', label: 'Honors & Awards', style: 'line' },
+  { id: 'skills', label: 'Skills & Interests', style: 'skills' },
+];
+export const category = (id) => CATEGORIES.find((c) => c.id === id) || CATEGORIES.find((c) => c.id === 'leadership');
 
 // ---------- factories ----------
 const stamp = () => ({ id: uid(), createdAt: nowISO(), updatedAt: nowISO() });
@@ -55,6 +72,10 @@ export const newPresentation = (o = {}) => ({
 });
 export const newIdea = (o = {}) => ({ ...stamp(), text: '', notes: '', tags: [], links: [], ...o });
 export const newTask = (o = {}) => ({ ...stamp(), text: '', done: false, dueDate: '', projectId: '', doneAt: '', ...o });
+export const newActivity = (o = {}) => ({
+  ...stamp(), title: '', organization: '', location: '', category: 'leadership', start: '', end: '', current: false, dateText: '',
+  bullets: [], hours: '', links: [], tags: [], onCv: true, notes: '', ...o,
+});
 export const newTime = (o = {}) => ({ ...stamp(), projectId: '', date: todayISO(), start: '', end: '', note: '', ...o });
 
 // ---------- queries ----------
@@ -137,4 +158,26 @@ export function upcoming(s, days = 60) {
   }
   for (const p of s.projects) if (inRange(p.dueDate) && ACTIVE_STAGES.includes(p.stage)) out.push({ date: p.dueDate, kind: 'Project due', text: p.title, ref: ['projects', p.id] });
   return out.sort((a, b) => a.date.localeCompare(b.date));
+}
+
+// ---------- activities ----------
+const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+/** "2023-02" -> "February 2023"; "2024" -> "2024". */
+export function fmtMonth(ym) {
+  if (!ym) return '';
+  const [y, m] = String(ym).split('-').map(Number);
+  return m ? `${MONTHS_LONG[m - 1]} ${y}` : String(y);
+}
+/** CV date range: "February 2023 – Present", "May 2024 – August 2024", "February 2024". */
+export function activityDates(a) {
+  if (a.dateText) return a.dateText;
+  const s = fmtMonth(a.start), e = a.current ? 'Present' : fmtMonth(a.end);
+  if (s && e && s !== e) return `${s} – ${e}`;
+  return s || e || '';
+}
+/** CV order: ongoing first, then most recently ended, then most recently started; undated items keep the order they were added. */
+export function activitySort(a, b) {
+  const year = (x) => (String(x.dateText || '').match(/(19|20)\d{2}(?!.*(19|20)\d{2})/) || [''])[0]; // last year in custom text
+  const endKey = (x) => (x.current ? '9999' : x.end || x.start || year(x) || '0000');
+  return endKey(b).localeCompare(endKey(a)) || (b.start || '').localeCompare(a.start || ''); // ties keep the order they were added
 }

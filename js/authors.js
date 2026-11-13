@@ -1,5 +1,5 @@
 // Author lists from a DOI: Crossref first (has family/given names), OpenAlex as a fallback.
-// Output is CV style: "Latif Z, Nelson B, Tummala A".
+// Output is CV style: "Lee A, Smith J, Patel R".
 import { extractDoi } from './citations.js';
 
 const PREPRINT = /^10\.(2139|48550|1101|36227|21203|20944|31219|31234|31235|26434|22541)\//;

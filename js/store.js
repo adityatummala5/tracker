@@ -7,10 +7,10 @@ import * as gh from './github.js';
 import { nowISO } from './util.js';
 
 const KEY = { data: 'rt:data', meta: 'rt:meta', cfg: 'rt:config', base: 'rt:base' };
-const COLLECTIONS = ['projects', 'presentations', 'ideas', 'tasks', 'timelog'];
+const COLLECTIONS = ['projects', 'presentations', 'ideas', 'tasks', 'timelog', 'activities'];
 
 export const emptyData = () => ({
-  version: 1, updatedAt: null, projects: [], presentations: [], ideas: [], tasks: [], timelog: [], timer: null,
+  version: 1, updatedAt: null, projects: [], presentations: [], ideas: [], tasks: [], timelog: [], activities: [], timer: null,
 });
 
 export function normalize(d) {
